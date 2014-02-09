@@ -130,7 +130,7 @@
     {
         var newPlayer = {};
         newPlayer.score = 0;
-        newPlayer.targetY = game.world.height / 2;
+        newPlayer.targetY = 0;
         newPlayer.wins = 0;
         newPlayer.upKey = upKey;
         newPlayer.downKey = downKey;
@@ -485,6 +485,10 @@
         scoreTextObject.visible = true;
         winText.visible = false;
         noticeText.visible = true;
+        rightPlayer.targetY = null;
+        leftPlayer.targetY = null;
+        rightPlayer.paddle.y = game.world.height / 2;
+        leftPlayer.paddle.y = game.world.height / 2;
     }
     
     /**
