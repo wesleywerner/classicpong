@@ -179,7 +179,7 @@
         
         // create various text objects
         scoreTextObject = game.add.text(265, 4, '0 0', { font: '60px monospace', fill: '#393' });
-        winText = game.add.text(140, game.world.height - 50, '', { font: '30px monospace', fill: '#0ff' });
+        winText = game.add.text(MARGIN * 2, game.world.height - 70, '', { font: '30px monospace', fill: '#0ff' });
         noticeText = game.add.text(MARGIN, game.world.height - MARGIN, 'tap or spacebar to play...', { font: '20px monospace', fill: '#fff' });
         
         // reset the game and ball states
@@ -449,11 +449,18 @@
         
         if (leftPlayer.score > rightPlayer.score)
         {
-            winText.content = 'left wins!';
+            winText.content = 'Player 1 wins!';
         }
         else if (rightPlayer.score > leftPlayer.score)
         {
-            winText.content = 'right wins!';
+            if (isMultiplayer)
+            {
+                winText.content = 'Player 2 wins!';
+            }
+            else
+            {
+                winText.content = 'Computer wins!';
+            }
         }
         else
         {
