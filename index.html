@@ -75,7 +75,13 @@
     // player objects
     var leftPlayer;
     var rightPlayer;
-
+    
+    /**
+     * Create and return a new player object.
+     * @paddleXPosition {int} The X-position where the player's paddle appears.
+     * @upKey {Phaser.Keyboard.VALUE} This key moves this paddle up.
+     * @downKey {Phaser.Keyboard.VALUE} This key moves this paddle down.
+     */
     function createPlayer(paddleXPosition, upKey, downKey)
     {
         var newPlayer = {};
@@ -88,6 +94,9 @@
         return newPlayer;
     }
     
+    /**
+     * Called when the Phaser framework preloads resources.
+     */
     function onPreload() 
     {
         game.load.image('bat', 'assets/bat.png');
@@ -102,6 +111,9 @@
         game.load.audio('destroy', 'assets/ball-destroy.wav');
     }
     
+    /**
+     * Called when the Phaser framework is first created.
+     */
     function onCreate() 
     {
         game.add.sprite(0, 0, 'help');
@@ -142,15 +154,18 @@
         ballDestroySound = game.add.audio('destroy', 1, false);
     }
     
+    /**
+     * Called when the screen is clicked or tapped.
+     */
     function touchScreen()
     {
-
+        // is the left or right side of the screen clicked?
         if (game.input.x < (game.world.width / 2))
         {
             // left side touch
             if (!isGameOver)
             {
-                // start a new game
+                // if the ball is already in play, move the left paddle.
                 if (!releaseBall())
                 {
                     leftPlayer.targetY = game.input.y;
@@ -158,7 +173,7 @@
             }
             else
             {
-                // start single player game
+                // start a new single player game
                 isMultiplayer = false;
                 resetGame();
                 resetBall();
@@ -169,7 +184,7 @@
             // right side touch
             if (!isGameOver)
             {
-                // start a new game
+                // // if the ball is already in play, move the right paddle.
                 if (!releaseBall())
                 {
                     rightPlayer.targetY = game.input.y;
@@ -177,7 +192,7 @@
             }
             else
             {
-                // start multiplayer game
+                // start a new multiplayer game
                 isMultiplayer = true;
                 resetGame();
                 resetBall();
@@ -185,6 +200,9 @@
         }
     }
     
+    /**
+     * Called on Phaser update ticks.
+     */
     function onUpdate()
     {
         
@@ -240,6 +258,11 @@
         }
     }
     
+    /** 
+     * Handle player paddle movement if the player's keys are pressed.
+     * The paddle can either be moved by keyboard or by a target-Y
+     * position, which gets set on screen clicks or taps.
+     */
     function movePlayerPaddle(playerObject)
     {
         if (game.input.keyboard.isDown(playerObject.upKey))
@@ -278,6 +301,11 @@
         }
     }
     
+    /**
+     * A very basic computer player that follows the ball
+     * when it moves towards the paddle, otherwise it
+     * floats toward a center position.
+     */
     function moveComputerPaddle(paddleObject)
     {
         // track the vertical difference with the ball
@@ -299,7 +327,12 @@
             paddleObject.body.velocity.y = toMiddle * 0.75;
         }
     }
-
+    
+    /**
+     * Create and return a new paddle object at (x, y).
+     * @x the x position of the paddle.
+     * @y the y position of the paddle.
+     */
     function createPaddle(x, y)
     {
         var bat = game.add.sprite(x, y, 'bat');
@@ -309,6 +342,9 @@
         return bat;
     }
     
+    /**
+     * marks the game as over, showing the winning player.
+     */
     function gameOver()
     {
         isGameOver = true;
@@ -336,6 +372,9 @@
         resetBall();
     }
     
+    /**
+     * Reset the game state so a new game can begin on request.
+     */
     function resetGame()
     {
         leftPlayer.score = 0;
@@ -350,10 +389,14 @@
         noticeText.visible = true;
     }
     
+    /**
+     * Center the ball in the screen and make it stationary.
+     */
     function resetBall()
     {
         if (!ball)
         {
+            // create a new ball object if there is none
             ball = game.add.sprite(0, 0, 'ball');
             ball.anchor.setTo(0.5, 0.5);
             ball.body.collideWorldBounds = true;
@@ -361,6 +404,7 @@
             ball.body.maxVelocity = { x: 500, y: 200 };
         }
         
+        // when no game is playing we animate the ball randomly
         if (isGameOver)
         {
             ball.body.velocity.x = Math.random() * 100;
@@ -372,6 +416,7 @@
             ball.body.velocity.y = 0;
         }
         
+        // reset counters and default speeds.
         increase_count = 0;
         ballSpeed = DEFAULT_BALL_SPEED;
         ball.x = game.world.centerX;
@@ -379,6 +424,10 @@
         ballReleased = false;
     }
     
+    /**
+     * Place the ball in play if it is stationary.
+     * Returns true if the ball was released.
+     */
     function releaseBall()
     {
         if (!ballReleased)
@@ -391,6 +440,9 @@
         }
     }
     
+    /**
+     * Returns -1 or +1 randomly.
+     */
     function randomNeg()
     {
         if (Math.random() < 0.5)
@@ -403,6 +455,11 @@
         }
     }
 
+    /**
+     * Increases the ball X velocity if the game is playing.
+     * A counter increase_count tracks how many speed-ups 
+     * happened during this round.
+     */
     function speedUpBall()
     {
         if (!isGameOver && ballReleased)
@@ -419,6 +476,11 @@
         }
     }
     
+    /**
+     * Tests if the ball is inside a goal area.
+     * If a goal is scored, we up a player score and
+     * reset the ball position, ready for the next round.
+     */
     function checkGoal()
     {
         if (!isGameOver)
@@ -444,6 +506,7 @@
                 resetBall();
             }
             
+            // if either player reaches the max score the game is over
             if (leftPlayer.score == MAX_SCORE || rightPlayer.score == MAX_SCORE)
             {
                 gameOver();
