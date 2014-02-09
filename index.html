@@ -51,10 +51,6 @@
     var batSpeed = 200;
     var ballSpeed = DEFAULT_BALL_SPEED;
     var ball;
-    var leftPaddle;
-    var rightPaddle;
-    var leftScore = 0;
-    var rightScore = 0;
     var backgroundImage;
     var increase_count = 0;
     
@@ -71,13 +67,27 @@
     var winText;
     var noticeText;
     
-    var leftPlayer = {};
-    var rightPlayer = {};
-
+    // phaser game instance
     var game = new Phaser.Game(640, 480, Phaser.CANVAS, 'zone',
         { preload: onPreload, create: onCreate, update: onUpdate }
         );
-        
+    
+    // player objects
+    var leftPlayer;
+    var rightPlayer;
+
+    function createPlayer(paddleXPosition, upKey, downKey)
+    {
+        var newPlayer = {};
+        newPlayer.score = 0;
+        newPlayer.targetY = null;
+        newPlayer.wins = 0;
+        newPlayer.upKey = upKey;
+        newPlayer.downKey = downKey;
+        newPlayer.paddle = createPaddle(paddleXPosition, game.world.centerY / 2);
+        return newPlayer;
+    }
+    
     function onPreload() 
     {
         game.load.image('bat', 'assets/bat.png');
@@ -96,6 +106,10 @@
     {
         game.add.sprite(0, 0, 'help');
         backgroundImage = game.add.tileSprite(0, 0, 640, 480, 'background');
+
+        leftPlayer = createPlayer(MARGIN, Phaser.Keyboard.UP, Phaser.Keyboard.DOWN);
+        rightPlayer = createPlayer(game.world.width - MARGIN, Phaser.Keyboard.W, Phaser.Keyboard.S);
+
         leftScoreText = game.add.text(240, 16, '0', { font: '60px monospace', fill: '#fff' });
         rightScoreText = game.add.text(360, 16, '0', { font: '60px monospace', fill: '#fff' });
         winText = game.add.text(140, game.world.height - 50,
@@ -104,8 +118,6 @@
             MARGIN, game.world.height - MARGIN, 
             'press spacebar to play...', 
             { font: '20px monospace', fill: '#fff' });
-        leftPaddle = createBat(MARGIN, game.world.centerY / 2);
-        rightPaddle = createBat(game.world.width - MARGIN, game.world.centerY / 2);
         gameOver();
         resetBall();
         
@@ -142,7 +154,6 @@
             // right player touch
             rightPlayer.targetY = game.input.y;
         }
-            
     }
     
     function onUpdate()
@@ -172,59 +183,19 @@
         if (!isGameOver)
         {
         
-            // left player movement
-            if (game.input.keyboard.isDown(Phaser.Keyboard.UP))
-            {
-                leftPaddle.body.velocity.y = -batSpeed;
-            }
-            else if (game.input.keyboard.isDown(Phaser.Keyboard.DOWN))
-            {
-                leftPaddle.body.velocity.y = batSpeed;
-            }
-            else 
-            {
-                autoMovePaddle(leftPaddle, leftPlayer);
-            }
-            
-            // right player movement
+            movePlayerPaddle(leftPlayer);
             if (isMultiplayer)
             {
-                 if (game.input.keyboard.isDown(Phaser.Keyboard.W))
-                 {
-                     rightPaddle.body.velocity.y = -batSpeed;
-                 }
-                 else if (game.input.keyboard.isDown(Phaser.Keyboard.S))
-                 {
-                     rightPaddle.body.velocity.y = batSpeed;
-                 }
-                 else
-                 {
-                     autoMovePaddle(rightPaddle, rightPlayer);
-                 }
+                movePlayerPaddle(rightPlayer);
             }
             else
             {
-                // update pc paddle
-                var pcDiff = (ball.y - rightPaddle.y);
-                if (ball.body.velocity.x > 1 && ball.x > 240)
-                {
-                    if (Math.abs(pcDiff) > 20)
-                    {
-                        rightPaddle.body.velocity.y = batSpeed * (pcDiff < 1 ? -1 : 1);
-                        //rightPaddle.body.velocity.y = (pcDiff * 8);
-                    }
-                }
-                else 
-                {
-                    // eases the pc paddle into center position when not tracking the ball
-                    var toMiddle = 240 - rightPaddle.y;
-                    rightPaddle.body.velocity.y = toMiddle * 0.75;
-                }
+                moveComputerPaddle(rightPlayer.paddle);
             }
             
             // process collisions
-            game.physics.collide(ball, leftPaddle, null, null, this);
-            game.physics.collide(ball, rightPaddle, null, null, this);
+            game.physics.collide(ball, leftPlayer.paddle);
+            game.physics.collide(ball, rightPlayer.paddle);
             
             if (ball.body.velocity.y == 0)
             {
@@ -253,23 +224,67 @@
         }
     }
     
-    function autoMovePaddle(paddleObject, playerObject)
+    function movePlayerPaddle(playerObject)
     {
-        var diff = (playerObject.targetY - paddleObject.y);
-        if (Math.abs(diff) > 15)
+        if (game.input.keyboard.isDown(playerObject.upKey))
         {
-            var negative = diff < 0 ? -1 : 1;
-            paddleObject.body.velocity.y = negative * batSpeed;
+            // the up key for this player is pressed
+            playerObject.paddle.body.velocity.y = -batSpeed;
+            playerObject.targetY = null;
+        }
+        else if (game.input.keyboard.isDown(playerObject.downKey))
+        {
+            // the down key for this player is pressed
+            playerObject.paddle.body.velocity.y = batSpeed;
+            playerObject.targetY = null;
+        }
+        else if (playerObject.targetY)
+        {
+            // the paddle has a target Y-position set
+            var diff = (playerObject.targetY - playerObject.paddle.y);
+            if (Math.abs(diff) > 15)
+            {
+                // move towards the target position
+                var negative = diff < 0 ? -1 : 1;
+                playerObject.paddle.body.velocity.y = negative * batSpeed;
+            }
+            else
+            {
+                // we reached the target position
+                playerObject.targetY = null;
+                playerObject.paddle.body.velocity.y = 0;
+            }
         }
         else
         {
-            // paddle is not moving
-            paddleObject.body.velocity.y = 0;
+            // paddle should stop moving
+            playerObject.paddle.body.velocity.y = 0;
         }
-
     }
     
-    function createBat(x, y)
+    function moveComputerPaddle(paddleObject)
+    {
+        // track the vertical difference with the ball
+        var pcDiff = (ball.y - paddleObject.y);
+        
+        // if the ball is coming our way
+        if (ball.body.velocity.x > 1 && ball.x > 240)
+        {
+            if (Math.abs(pcDiff) > 20)
+            {
+                paddleObject.body.velocity.y = batSpeed * (pcDiff < 1 ? -1 : 1);
+                //rightPaddle.body.velocity.y = (pcDiff * 8);
+            }
+        }
+        else 
+        {
+            // ease the paddle into center position
+            var toMiddle = 240 - paddleObject.y;
+            paddleObject.body.velocity.y = toMiddle * 0.75;
+        }
+    }
+
+    function createPaddle(x, y)
     {
         var bat = game.add.sprite(x, y, 'bat');
         bat.anchor.setTo(0.5, 0.5);
@@ -282,17 +297,17 @@
     {
         isGameOver = true;
         backgroundImage.visible = false;
-        leftPaddle.visible = false;
-        rightPaddle.visible = false;
+        leftPlayer.paddle.visible = false;
+        rightPlayer.paddle.visible = false;
         leftScoreText.visible = false;
         rightScoreText.visible = false;
         noticeText.visible = false;
         
-        if (leftScore > rightScore)
+        if (leftPlayer.score > rightPlayer.score)
         {
             winText.content = 'left wins!';
         }
-        else if (rightScore > leftScore)
+        else if (rightPlayer.score > leftPlayer.score)
         {
             winText.content = 'right wins!';
         }
@@ -307,12 +322,12 @@
     
     function resetGame()
     {
-        leftScore = 0;
-        rightScore = 0;
+        leftPlayer.score = 0;
+        rightPlayer.score = 0;
         isGameOver = false;
         backgroundImage.visible = true;
-        leftPaddle.visible = true;
-        rightPaddle.visible = true;
+        leftPlayer.paddle.visible = true;
+        rightPlayer.paddle.visible = true;
         leftScoreText.visible = true;
         rightScoreText.visible = true;
         winText.visible = false;
@@ -397,8 +412,8 @@
                 ballDestroyEmitter.x = ball.x
                 ballDestroyEmitter.y = ball.y
                 ballDestroyEmitter.start(true, 4000, null, 30);
-                rightScore += 1;
-                rightScoreText.content = rightScore;
+                rightPlayer.score += 1;
+                rightScoreText.content = rightPlayer.score;
                 resetBall();
             }
             else if (ball.x > game.world.width - MARGIN)
@@ -407,12 +422,12 @@
                 ballDestroyEmitter.x = ball.x
                 ballDestroyEmitter.y = ball.y
                 ballDestroyEmitter.start(true, 4000, null, 30);
-                leftScore += 1;
-                leftScoreText.content = leftScore;
+                leftPlayer.score += 1;
+                leftScoreText.content = leftPlayer.score;
                 resetBall();
             }
             
-            if (leftScore == MAX_SCORE || rightScore == MAX_SCORE)
+            if (leftPlayer.score == MAX_SCORE || rightPlayer.score == MAX_SCORE)
             {
                 gameOver();
             }
