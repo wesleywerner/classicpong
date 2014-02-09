@@ -540,6 +540,8 @@
                 ballDestroyEmitter.y = ball.y
                 ballDestroyEmitter.start(true, 4000, null, 30);
                 rightPlayer.score += 1;
+                rightPlayer.targetY = game.world.height / 2;
+                leftPlayer.targetY = game.world.height / 2;
                 resetBall();
             }
             else if (ball.x > game.world.width - MARGIN)
@@ -549,6 +551,8 @@
                 ballDestroyEmitter.y = ball.y
                 ballDestroyEmitter.start(true, 4000, null, 30);
                 leftPlayer.score += 1;
+                leftPlayer.targetY = game.world.height / 2;
+                rightPlayer.targetY = game.world.height / 2;
                 resetBall();
             }
             
