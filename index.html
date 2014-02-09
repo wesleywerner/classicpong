@@ -1,0 +1,393 @@
+<html>
+    <head>
+    <title>classic pong</title>
+    <style type="text/css">
+        body {
+            background: #000;
+            font-family: 'monospace';
+            margin: 0px;
+        }
+        #zone {
+            width: 640px;
+            height: 480px;
+            border: solid 1px #0f0;
+        }
+        #header {
+            height: 200px;
+            color: #00ff00;
+            text-align: center;
+            font-size: 42px;
+            margin-top: 50px;
+            background: url('logo.png') no-repeat center top;
+        }
+        #footer {
+            color: #003300;
+            text-align: center;
+            padding-top: 15px;
+        }
+        #footer a {
+            color: #004400;
+        }
+        .center {
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+
+<script src="js/phaser.min.js"></script>
+<script type="text/javascript">
+    
+    // constants
+    var DEFAULT_BALL_SPEED = 150;
+    var MARGIN = 25;
+    var MAX_SCORE = 5;
+    var BALL_SPEED_INCREASE_TIMER = 10;
+    
+    // variables
+    var ballReleased = false;
+    var isMultiplayer = false;
+    var isGameOver = true;
+    var batSpeed = 200;
+    var ballSpeed = DEFAULT_BALL_SPEED;
+    var ball;
+    var leftPaddle;
+    var rightPaddle;
+    var leftScore = 0;
+    var rightScore = 0;
+    var backgroundImage;
+    var increase_count = 0;
+    
+    // effects
+    var ballHitEmitter;
+    var ballDestroyEmitter;
+    var smallBlipSound;
+    var bigBlipsound;
+    var ballDestroySound;
+    
+    // text objects
+    var leftScoreText;
+    var rightScoreText;
+    var winText;
+    var noticeText;
+
+    var game = new Phaser.Game(640, 480, Phaser.CANVAS, 'zone',
+        { preload: onPreload, create: onCreate, update: onUpdate }
+        );
+        
+    function onPreload() 
+    {
+        game.load.image('bat', 'assets/bat.png');
+        game.load.image('ball', 'assets/ball.png');
+        game.load.image('background', 'assets/background.png');
+        game.load.image('help', 'assets/help.png');
+        game.load.image('particle', 'assets/particle.png');
+        game.load.image('number0', 'assets/number0.png');
+        game.load.image('number1', 'assets/number1.png');
+        game.load.audio('small-blip', 'assets/small-blip.wav');
+        game.load.audio('big-blip', 'assets/big-blip.wav');
+        game.load.audio('destroy', 'assets/ball-destroy.wav');
+    }
+    
+    function onCreate() 
+    {
+        game.add.sprite(0, 0, 'help');
+        backgroundImage = game.add.tileSprite(0, 0, 640, 480, 'background');
+        leftScoreText = game.add.text(240, 16, '0', { font: '60px monospace', fill: '#fff' });
+        rightScoreText = game.add.text(360, 16, '0', { font: '60px monospace', fill: '#fff' });
+        winText = game.add.text(140, game.world.height - 50,
+            '', { font: '30px monospace', fill: '#0ff' });
+        noticeText = game.add.text(
+            MARGIN, game.world.height - MARGIN, 
+            'press spacebar to play...', 
+            { font: '20px monospace', fill: '#fff' });
+        leftPaddle = createBat(MARGIN, game.world.centerY / 2);
+        rightPaddle = createBat(game.world.width - MARGIN, game.world.centerY / 2);
+        gameOver();
+        resetBall();
+        
+        // a timer increases the ball speed while playing.
+        game.time.events.loop(Phaser.Timer.SECOND * BALL_SPEED_INCREASE_TIMER, speedUpBall, this);
+        
+        // particle effect
+        ballHitEmitter = game.add.emitter(0, 0, 20);
+        ballHitEmitter.gravity = 0;
+        ballHitEmitter.makeParticles('particle');
+        ballDestroyEmitter = game.add.emitter(0, 0, 20);
+        ballDestroyEmitter.gravity = 0;
+        ballDestroyEmitter.makeParticles(['particle', 'number0', 'number1']);
+        ballDestroyEmitter.minParticleSpeed.setTo(-400, -400);
+        ballDestroyEmitter.maxParticleSpeed.setTo(400, 400);
+        
+        smallBlipSound = game.add.audio('small-blip', 1, false);
+        bigBlipSound = game.add.audio('big-blip', 1, false);
+        ballDestroySound = game.add.audio('destroy', 1, false);
+    }
+    
+    function onUpdate()
+    {
+        
+        if (game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR))
+        {
+            if (!isGameOver)
+            {
+                releaseBall();
+            }
+        }
+
+        if (game.input.keyboard.isDown(Phaser.Keyboard.ONE) && isGameOver)
+        {
+            isMultiplayer = false;
+            resetGame();
+            resetBall();
+        }
+        else if (game.input.keyboard.isDown(Phaser.Keyboard.TWO) && isGameOver)
+        {
+            isMultiplayer = true;
+            resetGame();
+            resetBall();
+        }
+        
+        if (!isGameOver)
+        {
+        
+            // left player movement
+            if (game.input.keyboard.isDown(Phaser.Keyboard.UP))
+            {
+                leftPaddle.body.velocity.y = -batSpeed;
+            }
+            else if (game.input.keyboard.isDown(Phaser.Keyboard.DOWN))
+            {
+                leftPaddle.body.velocity.y = batSpeed;
+            }
+            else 
+            {
+                leftPaddle.body.velocity.y = 0;
+            }
+            
+            // right player movement
+            if (isMultiplayer)
+            {
+                 if (game.input.keyboard.isDown(Phaser.Keyboard.W))
+                 {
+                     rightPaddle.body.velocity.y = -batSpeed;
+                 }
+                 else if (game.input.keyboard.isDown(Phaser.Keyboard.S))
+                 {
+                     rightPaddle.body.velocity.y = batSpeed;
+                 }
+                 else
+                 {
+                     rightPaddle.body.velocity.y = 0;
+                 }
+            }
+            else
+            {
+                // update pc paddle
+                var pcDiff = (ball.y - rightPaddle.y);
+                if (ball.body.velocity.x > 1 && ball.x > 240)
+                {
+                    if (Math.abs(pcDiff) > 20)
+                    {
+                        rightPaddle.body.velocity.y = batSpeed * (pcDiff < 1 ? -1 : 1);
+                        //rightPaddle.body.velocity.y = (pcDiff * 8);
+                    }
+                }
+                else 
+                {
+                    // eases the pc paddle into center position when not tracking the ball
+                    var toMiddle = 240 - rightPaddle.y;
+                    rightPaddle.body.velocity.y = toMiddle * 0.75;
+                }
+            }
+            
+            // process collisions
+            game.physics.collide(ball, leftPaddle, null, null, this);
+            game.physics.collide(ball, rightPaddle, null, null, this);
+            
+            if (ball.body.velocity.y == 0)
+            {
+                ball.body.velocity.y = 2 * Math.random() * 8;
+            }
+            
+            if (ball.body.touching.left || ball.body.touching.right)
+            {
+                bigBlipSound.play('', 0, 1, false, true);
+                if (increase_count > 3)
+                {
+                    ballHitEmitter.x = ball.x
+                    ballHitEmitter.y = ball.y
+                    ballHitEmitter.start(true, 4000, null, 2 * increase_count);
+                }
+            }
+            
+            if (ball.y < 8 || ball.y > 472)
+            {
+                smallBlipSound.play('', 0, 1, false, false);
+            }
+            
+            // win test
+            checkGoal();
+            
+        }
+    }
+    
+    function createBat(x, y)
+    {
+        var bat = game.add.sprite(x, y, 'bat');
+        bat.anchor.setTo(0.5, 0.5);
+        bat.body.collideWorldBounds = true;
+        bat.body.immovable = true;
+        return bat;
+    }
+    
+    function gameOver()
+    {
+        isGameOver = true;
+        backgroundImage.visible = false;
+        leftPaddle.visible = false;
+        rightPaddle.visible = false;
+        leftScoreText.visible = false;
+        rightScoreText.visible = false;
+        noticeText.visible = false;
+        
+        if (leftScore > rightScore)
+        {
+            winText.content = 'left wins!';
+        }
+        else if (rightScore > leftScore)
+        {
+            winText.content = 'right wins!';
+        }
+        else
+        {
+            winText.content = '';
+        }
+        
+        winText.visible = true;
+        resetBall();
+    }
+    
+    function resetGame()
+    {
+        leftScore = 0;
+        rightScore = 0;
+        isGameOver = false;
+        backgroundImage.visible = true;
+        leftPaddle.visible = true;
+        rightPaddle.visible = true;
+        leftScoreText.visible = true;
+        rightScoreText.visible = true;
+        winText.visible = false;
+        noticeText.visible = true;
+    }
+    
+    function resetBall()
+    {
+        if (!ball)
+        {
+            ball = game.add.sprite(0, 0, 'ball');
+            ball.anchor.setTo(0.5, 0.5);
+            ball.body.collideWorldBounds = true;
+            ball.body.bounce.setTo(1, 1);
+            ball.body.maxVelocity = { x: 500, y: 200 };
+        }
+        
+        if (isGameOver)
+        {
+            ball.body.velocity.x = Math.random() * 100;
+            ball.body.velocity.y = Math.random() * 50;
+        }
+        else
+        {
+            ball.body.velocity.x = 0;
+            ball.body.velocity.y = 0;
+        }
+        
+        increase_count = 0;
+        ballSpeed = DEFAULT_BALL_SPEED;
+        ball.x = game.world.centerX;
+        ball.y = game.world.centerY;
+        ballReleased = false;
+    }
+    
+    function releaseBall()
+    {
+        if (!ballReleased)
+        {
+            noticeText.visible = false;
+            ball.body.velocity.x = ballSpeed * randomNeg();
+            ball.body.velocity.y = Math.random() * ballSpeed * randomNeg();
+            ballReleased = true;
+        }
+    }
+    
+    function randomNeg()
+    {
+        if (Math.random() < 0.5)
+        {
+            return -1;
+        }
+        else
+        {
+            return 1;
+        }
+    }
+
+    function speedUpBall()
+    {
+        if (!isGameOver && ballReleased)
+        {
+            increase_count++;
+            if (ball.body.velocity.x < 0)
+            {
+                ball.body.velocity.x -= 35;
+            }
+            else
+            {
+                ball.body.velocity.x += 35;
+            }
+        }
+    }
+    
+    function checkGoal()
+    {
+        if (!isGameOver)
+        {
+            if (ball.x < MARGIN)
+            {
+                ballDestroySound.play('', 0, 1, false, true);
+                ballDestroyEmitter.x = ball.x
+                ballDestroyEmitter.y = ball.y
+                ballDestroyEmitter.start(true, 4000, null, 30);
+                rightScore += 1;
+                rightScoreText.content = rightScore;
+                resetBall();
+            }
+            else if (ball.x > game.world.width - MARGIN)
+            {
+                ballDestroySound.play('', 0, 1, false, true);
+                ballDestroyEmitter.x = ball.x
+                ballDestroyEmitter.y = ball.y
+                ballDestroyEmitter.start(true, 4000, null, 30);
+                leftScore += 1;
+                leftScoreText.content = leftScore;
+                resetBall();
+            }
+            
+            if (leftScore == MAX_SCORE || rightScore == MAX_SCORE)
+            {
+                gameOver();
+            }
+        }
+    }
+        
+</script>
+
+<body>
+    <div id="header">classic pong</div>
+    <div id="zone" class="center"></div>
+    <div id="footer">created with <a href="http://phaser.io/">Phaser</a>. wesley 2014.</div>
+</body>
+
+</html>
