@@ -116,7 +116,7 @@
             '', { font: '30px monospace', fill: '#0ff' });
         noticeText = game.add.text(
             MARGIN, game.world.height - MARGIN, 
-            'press spacebar to play...', 
+            'tap or spacebar to play...', 
             { font: '20px monospace', fill: '#fff' });
         gameOver();
         resetBall();
@@ -144,15 +144,44 @@
     
     function touchScreen()
     {
+
         if (game.input.x < (game.world.width / 2))
         {
-            // left player touch
-            leftPlayer.targetY = game.input.y;
+            // left side touch
+            if (!isGameOver)
+            {
+                // start a new game
+                if (!releaseBall())
+                {
+                    leftPlayer.targetY = game.input.y;
+                }
+            }
+            else
+            {
+                // start single player game
+                isMultiplayer = false;
+                resetGame();
+                resetBall();
+            }
         }
         else
         {
-            // right player touch
-            rightPlayer.targetY = game.input.y;
+            // right side touch
+            if (!isGameOver)
+            {
+                // start a new game
+                if (!releaseBall())
+                {
+                    rightPlayer.targetY = game.input.y;
+                }
+            }
+            else
+            {
+                // start multiplayer game
+                isMultiplayer = true;
+                resetGame();
+                resetBall();
+            }
         }
     }
     
@@ -167,19 +196,6 @@
             }
         }
 
-        if (game.input.keyboard.isDown(Phaser.Keyboard.ONE) && isGameOver)
-        {
-            isMultiplayer = false;
-            resetGame();
-            resetBall();
-        }
-        else if (game.input.keyboard.isDown(Phaser.Keyboard.TWO) && isGameOver)
-        {
-            isMultiplayer = true;
-            resetGame();
-            resetBall();
-        }
-        
         if (!isGameOver)
         {
         
@@ -371,6 +387,7 @@
             ball.body.velocity.x = ballSpeed * randomNeg();
             ball.body.velocity.y = Math.random() * ballSpeed * randomNeg();
             ballReleased = true;
+            return true;
         }
     }
     
