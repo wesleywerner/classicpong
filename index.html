@@ -70,6 +70,9 @@
     var rightScoreText;
     var winText;
     var noticeText;
+    
+    var leftPlayer = {};
+    var rightPlayer = {};
 
     var game = new Phaser.Game(640, 480, Phaser.CANVAS, 'zone',
         { preload: onPreload, create: onCreate, update: onUpdate }
@@ -106,6 +109,9 @@
         gameOver();
         resetBall();
         
+        // hook into pointer down events for mouse click / touch movement
+        game.input.onDown.add(touchScreen, this);
+        
         // a timer increases the ball speed while playing.
         game.time.events.loop(Phaser.Timer.SECOND * BALL_SPEED_INCREASE_TIMER, speedUpBall, this);
         
@@ -122,6 +128,21 @@
         smallBlipSound = game.add.audio('small-blip', 1, false);
         bigBlipSound = game.add.audio('big-blip', 1, false);
         ballDestroySound = game.add.audio('destroy', 1, false);
+    }
+    
+    function touchScreen()
+    {
+        if (game.input.x < (game.world.width / 2))
+        {
+            // left player touch
+            leftPlayer.targetY = game.input.y;
+        }
+        else
+        {
+            // right player touch
+            rightPlayer.targetY = game.input.y;
+        }
+            
     }
     
     function onUpdate()
@@ -162,7 +183,7 @@
             }
             else 
             {
-                leftPaddle.body.velocity.y = 0;
+                autoMovePaddle(leftPaddle, leftPlayer);
             }
             
             // right player movement
@@ -178,7 +199,7 @@
                  }
                  else
                  {
-                     rightPaddle.body.velocity.y = 0;
+                     autoMovePaddle(rightPaddle, rightPlayer);
                  }
             }
             else
@@ -230,6 +251,22 @@
             checkGoal();
             
         }
+    }
+    
+    function autoMovePaddle(paddleObject, playerObject)
+    {
+        var diff = (playerObject.targetY - paddleObject.y);
+        if (Math.abs(diff) > 15)
+        {
+            var negative = diff < 0 ? -1 : 1;
+            paddleObject.body.velocity.y = negative * batSpeed;
+        }
+        else
+        {
+            // paddle is not moving
+            paddleObject.body.velocity.y = 0;
+        }
+
     }
     
     function createBat(x, y)
