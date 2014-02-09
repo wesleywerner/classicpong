@@ -104,6 +104,8 @@
     // a sound of a goal score
     var ballDestroySound;
     
+    var walls;
+    
     // text objects
     var scoreTextObject;
     var winText;
@@ -128,11 +130,11 @@
     {
         var newPlayer = {};
         newPlayer.score = 0;
-        newPlayer.targetY = null;
+        newPlayer.targetY = game.world.height / 2;
         newPlayer.wins = 0;
         newPlayer.upKey = upKey;
         newPlayer.downKey = downKey;
-        newPlayer.paddle = createPaddle(paddleXPosition, game.world.centerY / 2);
+        newPlayer.paddle = createPaddle(paddleXPosition, game.world.height * Math.random());
         return newPlayer;
     }
     
@@ -171,6 +173,10 @@
         leftPlayer = createPlayer(MARGIN, Phaser.Keyboard.UP, Phaser.Keyboard.DOWN);
         rightPlayer = createPlayer(game.world.width - MARGIN, Phaser.Keyboard.W, Phaser.Keyboard.S);
         
+        // build walls which the ball can bounce off.
+        walls = game.add.group();
+        buildWalls();
+        
         // create various text objects
         scoreTextObject = game.add.text(265, 4, '0 0', { font: '60px monospace', fill: '#393' });
         winText = game.add.text(140, game.world.height - 50, '', { font: '30px monospace', fill: '#0ff' });
@@ -203,6 +209,21 @@
         smallBlipSound = game.add.audio('small-blip', 1, false);
         bigBlipSound = game.add.audio('big-blip', 1, false);
         ballDestroySound = game.add.audio('destroy', 1, false);
+    }
+    
+    function buildWalls()
+    {
+        // build a top wall
+        var wall = walls.create(0, 0, '');
+        wall.body.immovable = true;
+        wall.height = 5;
+        wall.width = 640;
+        
+        // build a bottom wall
+        wall = walls.create(0, game.world.height - 5, '');
+        wall.body.immovable = true;
+        wall.height = 5;
+        wall.width = 640;
     }
     
     /**
@@ -278,35 +299,56 @@
                 moveComputerPaddle(rightPlayer.paddle);
             }
             
-            // process collisions
-            game.physics.collide(ball, leftPlayer.paddle);
-            game.physics.collide(ball, rightPlayer.paddle);
-            
-            if (ball.body.velocity.y == 0)
-            {
-                ball.body.velocity.y = 2 * Math.random() * 8;
-            }
-            
-            if (ball.body.touching.left || ball.body.touching.right)
-            {
-                bigBlipSound.play('', 0, 1, false, true);
-                if (increase_count > 3)
-                {
-                    ballHitEmitter.x = ball.x
-                    ballHitEmitter.y = ball.y
-                    ballHitEmitter.start(true, 4000, null, 2 * increase_count);
-                }
-            }
-            
-            if (ball.y < 8 || ball.y > 472)
-            {
-                smallBlipSound.play('', 0, 1, false, false);
-            }
-            
-            // win test
+            // process collisions.
+            // we test on overlap, and not on collide, because we do
+            // not want to bounce the ball back in the same direction.
+            // our custom handler simply inverts the ball axis.
+            game.physics.overlap(ball, leftPlayer.paddle, ballAndPaddleOverlap);
+            game.physics.overlap(ball, rightPlayer.paddle, ballAndPaddleOverlap);
+            game.physics.overlap(ball, walls, wallAndBallOverlap);
+
+            // check if the ball is in a goal.
             checkGoal();
             
         }
+    }
+    
+    /**
+     * Called when the ball and a paddle overlaps.
+     */
+    function ballAndPaddleOverlap(_ball, _paddle)
+    {
+        // invert the ball's direction
+        _ball.body.velocity.x = -1 * _ball.body.velocity.x;
+        
+        // the paddle's velocity can influence the ball's motion.
+        // this allows the player to control the ball by applying
+        // force on contact.
+        _ball.body.velocity.y += _paddle.body.velocity.y;
+        
+        // play a hit sound
+        bigBlipSound.play('', 0, 1, false, false);
+        
+        // emit some hit particles after a few speed-ups
+        if (increase_count > 3)
+        {
+            ballHitEmitter.x = ball.x
+            ballHitEmitter.y = ball.y
+            ballHitEmitter.start(true, 4000, null, 2 * increase_count);
+        }
+
+        // tell the physics engine we handled this one.
+        return false;
+    }
+    
+    /**
+     * Called when the ball overlaps a wall.
+     */
+    function wallAndBallOverlap(_ball, _wall)
+    {
+        _ball.body.velocity.y = -1 * _ball.body.velocity.y;
+        smallBlipSound.play('', 0, 1, false, false);
+        return false;
     }
     
     /** 
