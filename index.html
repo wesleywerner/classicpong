@@ -52,27 +52,56 @@
 <script src="js/phaser.min.js"></script>
 <script type="text/javascript">
     
-    // constants
-    var DEFAULT_BALL_SPEED = 150;
-    var MARGIN = 25;
-    var MAX_SCORE = 5;
-    var BALL_SPEED_INCREASE_TIMER = 10;
+    // constant values appear in UPPER_CASE.
     
-    // variables
-    var ballReleased = false;
-    var isMultiplayer = false;
-    var isGameOver = true;
-    var batSpeed = 200;
-    var ballSpeed = DEFAULT_BALL_SPEED;
-    var ball;
-    var backgroundImage;
+    // the starting ball speed for each round
+    var DEFAULT_BALL_SPEED = 150;
+    
+    // the pixels padding our paddles from the edges.
+    // also indicates where goal boundaries lie.
+    var MARGIN = 25;
+    
+    // the score needed to win a game.
+    var MAX_SCORE = 5;
+    
+    // every n seconds the ball moves a little faster
+    var SPEEDUP_TIMEOUT = 10;
+    
+    // a counter that increments on each SPEEDUP_TIMEOUT.
+    // resets for each round.
     var increase_count = 0;
     
-    // effects
+    // flag if the ball is released into play
+    var ballReleased = false;
+    
+    // flag if the game is solo or multiplayer
+    var isMultiplayer = false;
+    
+    // flag if the game is over or in play
+    var isGameOver = true;
+    
+    // the Y-speed paddles move at, for both player and computer
+    var paddleMoveSpeed = 200;
+    
+    // the ball sprite
+    var ball;
+    
+    // the background image reference
+    var backgroundImage;
+    
+    // an emitter that shoots sparks when the ball hits a paddle
     var ballHitEmitter;
+    
+    // an emitter that explodes digits and sparks on a goal score
     var ballDestroyEmitter;
+    
+    // a sound of the ball hitting the sides of the world
     var smallBlipSound;
+    
+    // a sound of the ball hitting a paddle
     var bigBlipsound;
+    
+    // a sound of a goal score
     var ballDestroySound;
     
     // text objects
@@ -129,39 +158,48 @@
      */
     function onCreate() 
     {
+        // add the background and intro/help screens first so they 
+        // display below other sprites. this image is always shown
+        // we just show the playfield image above it while a game is
+        // in play.
         game.add.sprite(0, 0, 'help');
+        
+        // add the pong playfield background
         backgroundImage = game.add.tileSprite(0, 0, 640, 480, 'background');
-
+        
+        // create the player objects. these contain our paddle sprites.
         leftPlayer = createPlayer(MARGIN, Phaser.Keyboard.UP, Phaser.Keyboard.DOWN);
         rightPlayer = createPlayer(game.world.width - MARGIN, Phaser.Keyboard.W, Phaser.Keyboard.S);
         
-        // create text objects for showing words on screen
-        scoreTextObject = game.add.text(265, 16, '0 0', { font: '60px monospace', fill: '#393' });
-        winText = game.add.text(140, game.world.height - 50,
-            '', { font: '30px monospace', fill: '#0ff' });
-        noticeText = game.add.text(
-            MARGIN, game.world.height - MARGIN, 
-            'tap or spacebar to play...', 
-            { font: '20px monospace', fill: '#fff' });
+        // create various text objects
+        scoreTextObject = game.add.text(265, 4, '0 0', { font: '60px monospace', fill: '#393' });
+        winText = game.add.text(140, game.world.height - 50, '', { font: '30px monospace', fill: '#0ff' });
+        noticeText = game.add.text(MARGIN, game.world.height - MARGIN, 'tap or spacebar to play...', { font: '20px monospace', fill: '#fff' });
+        
+        // reset the game and ball states
         gameOver();
         resetBall();
         
         // hook into pointer down events for mouse click / touch movement
         game.input.onDown.add(touchScreen, this);
         
-        // a timer increases the ball speed while playing.
-        game.time.events.loop(Phaser.Timer.SECOND * BALL_SPEED_INCREASE_TIMER, speedUpBall, this);
+        // add a timer that periodically increases 
+        // the ball speed while playing.
+        game.time.events.loop(Phaser.Timer.SECOND * SPEEDUP_TIMEOUT, speedUpBall, this);
         
-        // particle effect
+        // create our particle emitters
         ballHitEmitter = game.add.emitter(0, 0, 20);
         ballHitEmitter.gravity = 0;
         ballHitEmitter.makeParticles('particle');
         ballDestroyEmitter = game.add.emitter(0, 0, 20);
         ballDestroyEmitter.gravity = 0;
+        // choose random images from a list
         ballDestroyEmitter.makeParticles(['particle', 'number0', 'number1']);
+        // particles will fly out at a great velocity
         ballDestroyEmitter.minParticleSpeed.setTo(-400, -400);
         ballDestroyEmitter.maxParticleSpeed.setTo(400, 400);
         
+        // add our game sounds from preloaded audio data
         smallBlipSound = game.add.audio('small-blip', 1, false);
         bigBlipSound = game.add.audio('big-blip', 1, false);
         ballDestroySound = game.add.audio('destroy', 1, false);
@@ -281,13 +319,13 @@
         if (game.input.keyboard.isDown(playerObject.upKey))
         {
             // the up key for this player is pressed
-            playerObject.paddle.body.velocity.y = -batSpeed;
+            playerObject.paddle.body.velocity.y = -paddleMoveSpeed;
             playerObject.targetY = null;
         }
         else if (game.input.keyboard.isDown(playerObject.downKey))
         {
             // the down key for this player is pressed
-            playerObject.paddle.body.velocity.y = batSpeed;
+            playerObject.paddle.body.velocity.y = paddleMoveSpeed;
             playerObject.targetY = null;
         }
         else if (playerObject.targetY)
@@ -298,7 +336,7 @@
             {
                 // move towards the target position
                 var negative = diff < 0 ? -1 : 1;
-                playerObject.paddle.body.velocity.y = negative * batSpeed;
+                playerObject.paddle.body.velocity.y = negative * paddleMoveSpeed;
             }
             else
             {
@@ -329,7 +367,7 @@
         {
             if (Math.abs(pcDiff) > 20)
             {
-                paddleObject.body.velocity.y = batSpeed * (pcDiff < 1 ? -1 : 1);
+                paddleObject.body.velocity.y = paddleMoveSpeed * (pcDiff < 1 ? -1 : 1);
                 //rightPaddle.body.velocity.y = (pcDiff * 8);
             }
         }
@@ -429,7 +467,6 @@
         
         // reset counters and default speeds.
         increase_count = 0;
-        ballSpeed = DEFAULT_BALL_SPEED;
         ball.x = game.world.centerX;
         ball.y = game.world.centerY;
         ballReleased = false;
@@ -444,8 +481,8 @@
         if (!ballReleased)
         {
             noticeText.visible = false;
-            ball.body.velocity.x = ballSpeed * randomNeg();
-            ball.body.velocity.y = Math.random() * ballSpeed * randomNeg();
+            ball.body.velocity.x = DEFAULT_BALL_SPEED * randomNeg();
+            ball.body.velocity.y = Math.random() * DEFAULT_BALL_SPEED * randomNeg();
             ballReleased = true;
             return true;
         }
