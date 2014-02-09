@@ -76,8 +76,7 @@
     var ballDestroySound;
     
     // text objects
-    var leftScoreText;
-    var rightScoreText;
+    var scoreTextObject;
     var winText;
     var noticeText;
     
@@ -135,9 +134,9 @@
 
         leftPlayer = createPlayer(MARGIN, Phaser.Keyboard.UP, Phaser.Keyboard.DOWN);
         rightPlayer = createPlayer(game.world.width - MARGIN, Phaser.Keyboard.W, Phaser.Keyboard.S);
-
-        leftScoreText = game.add.text(240, 16, '0', { font: '60px monospace', fill: '#fff' });
-        rightScoreText = game.add.text(360, 16, '0', { font: '60px monospace', fill: '#fff' });
+        
+        // create text objects for showing words on screen
+        scoreTextObject = game.add.text(265, 16, '0 0', { font: '60px monospace', fill: '#393' });
         winText = game.add.text(140, game.world.height - 50,
             '', { font: '30px monospace', fill: '#0ff' });
         noticeText = game.add.text(
@@ -365,8 +364,7 @@
         backgroundImage.visible = false;
         leftPlayer.paddle.visible = false;
         rightPlayer.paddle.visible = false;
-        leftScoreText.visible = false;
-        rightScoreText.visible = false;
+        scoreTextObject.visible = false;
         noticeText.visible = false;
         
         if (leftPlayer.score > rightPlayer.score)
@@ -397,8 +395,7 @@
         backgroundImage.visible = true;
         leftPlayer.paddle.visible = true;
         rightPlayer.paddle.visible = true;
-        leftScoreText.visible = true;
-        rightScoreText.visible = true;
+        scoreTextObject.visible = true;
         winText.visible = false;
         noticeText.visible = true;
     }
@@ -506,7 +503,6 @@
                 ballDestroyEmitter.y = ball.y
                 ballDestroyEmitter.start(true, 4000, null, 30);
                 rightPlayer.score += 1;
-                rightScoreText.content = rightPlayer.score;
                 resetBall();
             }
             else if (ball.x > game.world.width - MARGIN)
@@ -516,9 +512,10 @@
                 ballDestroyEmitter.y = ball.y
                 ballDestroyEmitter.start(true, 4000, null, 30);
                 leftPlayer.score += 1;
-                leftScoreText.content = leftPlayer.score;
                 resetBall();
             }
+            
+            scoreTextObject.content = leftPlayer.score + ' ' + rightPlayer.score;
             
             // if either player reaches the max score the game is over
             if (leftPlayer.score == MAX_SCORE || rightPlayer.score == MAX_SCORE)
