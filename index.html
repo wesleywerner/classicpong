@@ -330,7 +330,7 @@
             // the paddle's velocity can influence the ball's motion.
             // this allows the player to control the ball by applying
             // force on contact.
-            _ball.body.velocity.y += _paddle.body.velocity.y;
+            _ball.body.velocity.y += _paddle.body.velocity.y * Math.random();
             
             // play a hit sound
             bigBlipSound.play('', 0, 1, false, false);
