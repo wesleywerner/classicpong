@@ -318,27 +318,36 @@
      */
     function ballAndPaddleOverlap(_ball, _paddle)
     {
-        // invert the ball's direction
-        _ball.body.velocity.x = -1 * _ball.body.velocity.x;
-        
-        // the paddle's velocity can influence the ball's motion.
-        // this allows the player to control the ball by applying
-        // force on contact.
-        _ball.body.velocity.y += _paddle.body.velocity.y;
-        
-        // play a hit sound
-        bigBlipSound.play('', 0, 1, false, false);
-        
-        // emit some hit particles after a few speed-ups
-        if (increase_count > 3)
+        // only if the ball is moving towards a paddle
+        var approachingLeftPaddle = (_paddle.body.x < _ball.body.x && _ball.body.velocity.x < 0);
+        var approachingRightPaddle = (_paddle.body.x > _ball.body.x && _ball.body.velocity.x > 0);
+        if (approachingLeftPaddle || approachingRightPaddle)
         {
-            ballHitEmitter.x = ball.x
-            ballHitEmitter.y = ball.y
-            ballHitEmitter.start(true, 4000, null, 2 * increase_count);
+        
+            // invert the ball's direction
+            _ball.body.velocity.x = -1 * _ball.body.velocity.x;
+            
+            // the paddle's velocity can influence the ball's motion.
+            // this allows the player to control the ball by applying
+            // force on contact.
+            _ball.body.velocity.y += _paddle.body.velocity.y;
+            
+            // play a hit sound
+            bigBlipSound.play('', 0, 1, false, false);
+            
+            // emit some hit particles after a few speed-ups
+            if (increase_count > 3)
+            {
+                ballHitEmitter.x = ball.x
+                ballHitEmitter.y = ball.y
+                ballHitEmitter.start(true, 4000, null, 2 * increase_count);
+            }
+
         }
 
         // tell the physics engine we handled this one.
         return false;
+            
     }
     
     /**
@@ -346,8 +355,16 @@
      */
     function wallAndBallOverlap(_ball, _wall)
     {
-        _ball.body.velocity.y = -1 * _ball.body.velocity.y;
-        smallBlipSound.play('', 0, 1, false, false);
+        // only if the ball is approaching a wall
+        var approachingTopWall = (_wall.body.y < _ball.body.y && _ball.body.velocity.y < 0);
+        var approachingBotWall = (_wall.body.y > _ball.body.y && _ball.body.velocity.y > 0);
+        if (approachingTopWall || approachingBotWall)
+        {
+            _ball.body.velocity.y = -1 * _ball.body.velocity.y;
+            smallBlipSound.play('', 0, 1, false, false);
+        }
+        
+        // tell the physics engine we handled this one.
         return false;
     }
     
