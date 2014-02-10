@@ -12,3 +12,7 @@ Initial release features:
 * better ball and paddle collision. feels like an ice cube instead of a rubber ball.
 * add many code comments.
 * refactored player data in separate objects allowing for homogeneous movement code.
+
+# version 3
+
+* only bounce the ball off paddles and walls if it is approaching them. fixes a bug where the ball gets stuck between two bouncing states, like schroedinger's cat.
