@@ -134,7 +134,7 @@
         newPlayer.wins = 0;
         newPlayer.upKey = upKey;
         newPlayer.downKey = downKey;
-        newPlayer.paddle = createPaddle(paddleXPosition, game.world.height * Math.random());
+        newPlayer.paddle = createPaddle(paddleXPosition, 240);
         return newPlayer;
     }
     
@@ -214,15 +214,15 @@
     function buildWalls()
     {
         // build a top wall
-        var wall = walls.create(0, 0, '');
+        var wall = walls.create(0, -20, '');
         wall.body.immovable = true;
-        wall.height = 5;
+        wall.height = 20;
         wall.width = 640;
         
         // build a bottom wall
-        wall = walls.create(0, game.world.height - 5, '');
+        wall = walls.create(0, 480, '');
         wall.body.immovable = true;
-        wall.height = 5;
+        wall.height = 20;
         wall.width = 640;
     }
     
@@ -504,8 +504,8 @@
         noticeText.visible = true;
         rightPlayer.targetY = null;
         leftPlayer.targetY = null;
-        rightPlayer.paddle.y = game.world.height / 2;
-        leftPlayer.paddle.y = game.world.height / 2;
+        rightPlayer.paddle.y = 240;
+        leftPlayer.paddle.y = 240;
     }
     
     /**
@@ -608,8 +608,8 @@
                 ballDestroyEmitter.y = ball.y
                 ballDestroyEmitter.start(true, 4000, null, 30);
                 rightPlayer.score += 1;
-                rightPlayer.targetY = game.world.height / 2;
-                leftPlayer.targetY = game.world.height / 2;
+                rightPlayer.targetY = 240;
+                leftPlayer.targetY = 240;
                 resetBall();
             }
             else if (ball.x > game.world.width)
@@ -619,8 +619,8 @@
                 ballDestroyEmitter.y = ball.y
                 ballDestroyEmitter.start(true, 4000, null, 30);
                 leftPlayer.score += 1;
-                leftPlayer.targetY = game.world.height / 2;
-                rightPlayer.targetY = game.world.height / 2;
+                leftPlayer.targetY = 240;
+                rightPlayer.targetY = 240;
                 resetBall();
             }
             
