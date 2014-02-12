@@ -518,8 +518,6 @@
             // create a new ball object if there is none
             ball = game.add.sprite(0, 0, 'ball');
             ball.anchor.setTo(0.5, 0.5);
-            ball.body.collideWorldBounds = true;
-            ball.body.bounce.setTo(1, 1);
             ball.body.maxVelocity = { x: 500, y: 200 };
         }
         
@@ -603,7 +601,7 @@
     {
         if (!isGameOver)
         {
-            if (ball.x < MARGIN)
+            if (ball.x < 0)
             {
                 ballDestroySound.play('', 0, 1, false, true);
                 ballDestroyEmitter.x = ball.x
@@ -614,7 +612,7 @@
                 leftPlayer.targetY = game.world.height / 2;
                 resetBall();
             }
-            else if (ball.x > game.world.width - MARGIN)
+            else if (ball.x > game.world.width)
             {
                 ballDestroySound.play('', 0, 1, false, true);
                 ballDestroyEmitter.x = ball.x
