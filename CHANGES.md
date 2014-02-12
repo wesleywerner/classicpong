@@ -16,3 +16,8 @@ Initial release features:
 # version 3
 
 * only bounce the ball off paddles and walls if it is approaching them. fixes a bug where the ball gets stuck between two bouncing states, like schroedinger's cat.
+
+# version 4
+
+* fix paddle start positions to avoid a race condition where the game world size does not reflect the expected value. and adjust the walls size and positioning for a more seamless play area.
+* reduce goal margins to avoid very fast balls from triggering goals on successful blocks.
