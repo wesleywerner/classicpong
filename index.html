@@ -15,38 +15,8 @@
 <html>
     <head>
     <title>classic pong</title>
-    <style type="text/css">
-        body {
-            background: #000;
-            font-family: 'monospace';
-            margin: 0px;
-        }
-        #zone {
-            width: 640px;
-            height: 480px;
-            border: solid 1px #0f0;
-        }
-        #header {
-            height: 200px;
-            color: #00ff00;
-            text-align: center;
-            font-size: 42px;
-            margin-top: 50px;
-            background: url('assets/logo.png') no-repeat center top;
-        }
-        #footer {
-            color: #003300;
-            text-align: center;
-            padding-top: 15px;
-        }
-        #footer a {
-            color: #004400;
-        }
-        .center {
-            margin-left: auto;
-            margin-right: auto;
-        }
-    </style>
+    <link rel = "stylesheet" type="text/css" href="desktop.css" media="only screen and (min-device-width:1024px)" />
+    <link rel = "stylesheet" type="text/css" href="mobile.css" media="only screen and (max-device-width:1024px)" />
 </head>
 
 <script src="js/phaser.min.js"></script>
@@ -160,6 +130,21 @@
      */
     function onCreate() 
     {
+
+        if (this.game.device.desktop)
+        {
+            game.stage.scale.pageAlignHorizontally = true;
+        }
+        else
+        {
+            game.stage.scaleMode = Phaser.StageScaleMode.SHOW_ALL;
+            game.stage.scale.minWidth = 320;
+            game.stage.scale.minHeight = 240;
+            game.stage.scale.maxWidth = 640;
+            game.stage.scale.maxHeight = 480;
+            game.stage.scale.setScreenSize(true);
+        }
+
         // add the background and intro/help screens first so they 
         // display below other sprites. this image is always shown
         // we just show the playfield image above it while a game is
