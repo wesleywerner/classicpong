@@ -1,0 +1,30 @@
+body {
+    background: #000;
+    font-family: 'monospace';
+    margin: 0px;
+}
+#zone {
+    width: 640px;
+    height: 480px;
+    border: solid 1px #0f0;
+}
+#header {
+    height: 200px;
+    color: #00ff00;
+    text-align: center;
+    font-size: 42px;
+    margin-top: 50px;
+    background: url('assets/logo.png') no-repeat center top;
+}
+#footer {
+    color: #003300;
+    text-align: center;
+    padding-top: 15px;
+}
+#footer a {
+    color: #004400;
+}
+.center {
+    margin-left: auto;
+    margin-right: auto;
+}
